@@ -27,8 +27,12 @@ function reducer(state, action) {
   }
 }
 
+// Skip the key screen if the key is baked in at build time (production)
+// or already saved in localStorage (local dev)
+const hasKey = Boolean(import.meta.env.VITE_PLANTNET_API_KEY || localStorage.getItem('plantnet_api_key'));
+
 const initial = {
-  screen: localStorage.getItem('plantnet_api_key') ? 'capture' : 'apikey',
+  screen: hasKey ? 'capture' : 'apikey',
   imageFile: null, imagePreview: null, result: null, error: null, isSettingsMode: false,
 };
 

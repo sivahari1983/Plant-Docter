@@ -11,7 +11,8 @@ export function usePlantAnalysis() {
   const [error,   setError]   = useState(null);
 
   async function analyze(file) {
-    const apiKey = localStorage.getItem('plantnet_api_key');
+    // Build-time key (baked in by GitHub Actions) takes priority over localStorage
+    const apiKey = import.meta.env.VITE_PLANTNET_API_KEY || localStorage.getItem('plantnet_api_key');
     if (!apiKey) {
       setError('No API key found. Please add your free Pl@ntNet API key in settings.');
       return;
