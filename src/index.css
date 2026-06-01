@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Nunito:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { font-family: 'Nunito', system-ui, sans-serif; background: #FAFAF5; }
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 1.5rem);
+}
+
+:focus-visible {
+  outline: 3px solid #52B788;
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.95); opacity: 1; }
+  70%  { transform: scale(1.1);  opacity: 0.5; }
+  100% { transform: scale(0.95); opacity: 1; }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-pulse-ring { animation: pulse-ring 2s ease-in-out infinite; }
+.animate-spin-slow  { animation: spin-slow 3s linear infinite; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.view-enter {
+  animation: fadeInUp 200ms ease forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin,
+  .animate-pulse,
+  .animate-spin-slow,
+  .animate-pulse-ring {
+    animation: none;
+  }
+}
