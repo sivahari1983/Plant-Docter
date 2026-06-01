@@ -1,8 +1,8 @@
 import { useRef } from 'react';
-import { Camera, ImagePlus, Leaf } from 'lucide-react';
+import { Camera, ImagePlus, Leaf, Settings } from 'lucide-react';
 import { validateImageFile } from '../utils/imageUtils';
 
-export default function CaptureScreen({ onImageCapture }) {
+export default function CaptureScreen({ onImageCapture, onOpenSettings }) {
   const cameraRef  = useRef();
   const galleryRef = useRef();
 
@@ -15,6 +15,15 @@ export default function CaptureScreen({ onImageCapture }) {
 
   return (
     <div className="min-h-screen bg-cream-100 flex flex-col relative overflow-y-auto">
+      {/* Settings button */}
+      <button
+        onClick={onOpenSettings}
+        aria-label="Open API key settings"
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-forest-700 hover:bg-forest-50 active:bg-forest-200 transition-colors duration-150"
+      >
+        <Settings size={20} />
+      </button>
+
       {/* Header / Logo */}
       <div className="px-4 pt-6 pb-2 flex items-center gap-2">
         <Leaf className="text-forest-500" size={28} aria-hidden="true" />

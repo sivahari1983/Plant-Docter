@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Shield, Leaf, ChevronLeft } from 'lucide-react';
 
 export default function ApiKeyView({ onKeySet, isSettingsMode = false, onBack }) {
-  const existing = localStorage.getItem('anthropic_api_key') || '';
+  const existing = localStorage.getItem('plantnet_api_key') || '';
   const [key,  setKey]  = useState(isSettingsMode ? existing : '');
   const [show, setShow] = useState(false);
   const [err,  setErr]  = useState('');
@@ -10,12 +10,11 @@ export default function ApiKeyView({ onKeySet, isSettingsMode = false, onBack })
   function handleSubmit(e) {
     e.preventDefault();
     const trimmed = key.trim();
-    if (!trimmed) { setErr('Please enter your API key.'); return; }
-    if (!trimmed.startsWith('sk-ant-')) {
-      setErr("That doesn't look like a valid Anthropic API key.");
+    if (!trimmed || trimmed.length < 8) {
+      setErr('Please enter a valid Pl@ntNet API key.');
       return;
     }
-    localStorage.setItem('anthropic_api_key', trimmed);
+    localStorage.setItem('plantnet_api_key', trimmed);
     onKeySet();
   }
 
@@ -46,19 +45,29 @@ export default function ApiKeyView({ onKeySet, isSettingsMode = false, onBack })
           id="apikey-heading"
           className="font-sans text-2xl font-bold text-forest-900 text-center mt-4"
         >
-          {isSettingsMode ? 'Update API Key' : 'Connect your AI'}
+          {isSettingsMode ? 'Update API Key' : 'Connect Pl@ntNet'}
         </h2>
         <p className="font-sans text-sm text-slate-500 text-center mt-2 leading-relaxed max-w-xs mx-auto">
-          Enter your Anthropic API key to enable plant analysis. Your key is stored only in your
-          browser and never sent to any server except Anthropic's.
+          {isSettingsMode
+            ? 'Enter a new Pl@ntNet API key. Your key is stored only in this browser.'
+            : "Plant Doctor uses the free Pl@ntNet API — the world's most accurate plant ID service, built by botanists. Get your free key at my.plantnet.org (30 seconds, no payment needed)."}
         </p>
+
+        {!isSettingsMode && (
+          <ol className="text-sm text-slate-500 space-y-1 mt-4 mb-1 list-decimal list-inside bg-sage-100 rounded-xl p-4">
+            <li>Go to <span className="text-forest-600 font-semibold">my.plantnet.org</span></li>
+            <li>Create a free account (email only)</li>
+            <li>Copy your API key from the dashboard</li>
+            <li>Paste it below — you only do this once</li>
+          </ol>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-0" noValidate>
           <label
             htmlFor="apikey-input"
-            className="font-sans text-sm font-semibold text-forest-900 block mb-1.5 mt-5"
+            className="font-sans text-sm font-semibold text-forest-900 block mb-1.5 mt-3"
           >
-            Anthropic API Key
+            Pl@ntNet API Key
           </label>
           <div className="relative">
             <input
@@ -66,7 +75,7 @@ export default function ApiKeyView({ onKeySet, isSettingsMode = false, onBack })
               type={show ? 'text' : 'password'}
               value={key}
               onChange={(e) => { setKey(e.target.value); setErr(''); }}
-              placeholder="sk-ant-..."
+              placeholder="2b10..."
               aria-describedby={err ? 'apikey-error' : undefined}
               className="w-full rounded-xl border-2 border-cream-300 bg-cream-100 px-4 py-3 pr-12 font-mono text-sm text-slate-700 placeholder:text-slate-400 focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/20 transition-colors"
               autoComplete="off"
@@ -98,12 +107,12 @@ export default function ApiKeyView({ onKeySet, isSettingsMode = false, onBack })
         </form>
 
         <a
-          href="https://console.anthropic.com"
+          href="https://my.plantnet.org"
           target="_blank"
           rel="noopener noreferrer"
           className="font-sans text-sm text-forest-600 hover:text-forest-900 underline underline-offset-2 text-center block mt-4 transition-colors"
         >
-          Get a free API key →
+          Get a free key at my.plantnet.org →
         </a>
 
         <div className="flex items-center justify-center gap-2 mt-5">

@@ -1,5 +1,6 @@
 import { useReducer, useCallback, useEffect } from 'react';
 import { usePlantAnalysis } from './hooks/usePlantAnalysis';
+import ApiKeyView   from './components/ApiKeyView';
 import CaptureScreen from './components/CaptureScreen';
 import LoadingScreen from './components/LoadingScreen';
 import ResultsScreen from './components/ResultsScreen';
@@ -14,13 +15,22 @@ function reducer(state, action) {
     case 'ERROR':
       return { ...state, screen: 'error', error: action.error };
     case 'RESET':
-      return { screen: 'capture', imageFile: null, imagePreview: null, result: null, error: null };
+      return { screen: 'capture', imageFile: null, imagePreview: null, result: null, error: null, isSettingsMode: false };
+    case 'OPEN_SETTINGS':
+      return { ...state, screen: 'apikey', isSettingsMode: true };
+    case 'KEY_SET':
+      return { ...state, screen: 'capture', isSettingsMode: false };
+    case 'BACK_FROM_SETTINGS':
+      return { ...state, screen: 'capture', isSettingsMode: false };
     default:
       return state;
   }
 }
 
-const initial = { screen: 'capture', imageFile: null, imagePreview: null, result: null, error: null };
+const initial = {
+  screen: localStorage.getItem('plantnet_api_key') ? 'capture' : 'apikey',
+  imageFile: null, imagePreview: null, result: null, error: null, isSettingsMode: false,
+};
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initial);
@@ -42,8 +52,18 @@ export default function App() {
 
   return (
     <main className="max-w-md mx-auto min-h-screen bg-cream-100 relative shadow-card-lg">
+      {state.screen === 'apikey' && (
+        <ApiKeyView
+          isSettingsMode={state.isSettingsMode}
+          onKeySet={() => dispatch({ type: 'KEY_SET' })}
+          onBack={state.isSettingsMode ? () => dispatch({ type: 'BACK_FROM_SETTINGS' }) : undefined}
+        />
+      )}
       {state.screen === 'capture' && (
-        <CaptureScreen onImageCapture={handleCapture} />
+        <CaptureScreen
+          onImageCapture={handleCapture}
+          onOpenSettings={() => dispatch({ type: 'OPEN_SETTINGS' })}
+        />
       )}
       {state.screen === 'loading' && (
         <LoadingScreen imagePreview={state.imagePreview} />

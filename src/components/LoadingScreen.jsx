@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Leaf } from 'lucide-react';
 
 const messages = [
-  'Loading AI model (first time only)...',
+  'Sending image to Pl@ntNet...',
   'Identifying your plant...',
-  'Analysing leaf structure...',
+  'Matching species database...',
   'Checking nutritional profiles...',
   'Preparing recommendations...',
 ];
@@ -74,7 +74,7 @@ export default function LoadingScreen({ imagePreview }) {
             {messages[msgIdx]}
           </p>
           <p className="font-sans text-sm text-slate-400 mt-1">
-            First visit may take 15–20 s to load the AI model
+            This usually takes 3–5 seconds
           </p>
         </div>
       </div>
