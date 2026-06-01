@@ -543,6 +543,7 @@ const entries = [
 
 /**
  * Match a Pl@ntNet API response against the nutritional database.
+ * Uses multi-tier substring scoring so genus/family/common-name variations all match.
  * @param {object} plantNetResponse  Raw JSON from the PlantNet v2 identify endpoint
  * @returns {object} Plant data record ready for display
  */
@@ -555,57 +556,72 @@ export function lookupPlant(plantNetResponse) {
   const top = results[0];
   const confidence = Math.round((top.score || 0) * 100);
 
-  // Build a set of lowercase identifiers from the top PlantNet result
-  const genus      = top.species?.genus?.scientificNameWithoutAuthor?.toLowerCase()  || '';
-  const family     = top.species?.family?.scientificNameWithoutAuthor?.toLowerCase() || '';
-  const sciName    = top.species?.scientificNameWithoutAuthor?.toLowerCase()         || '';
-  const commonNames = (top.species?.commonNames || []).map(n => n.toLowerCase());
+  // Extract every useful string from the PlantNet response
+  const genus      = (top.species?.genus?.scientificNameWithoutAuthor || '').toLowerCase().trim();
+  const family     = (top.species?.family?.scientificNameWithoutAuthor || '').toLowerCase().trim();
+  const sciName    = (top.species?.scientificNameWithoutAuthor || '').toLowerCase().trim();
+  const commonNames = (top.species?.commonNames || []).map(n => n.toLowerCase().trim());
 
-  const identifiers = new Set([
+  // Flat list of search terms: full strings AND individual words
+  const searchTerms = [
     genus, family, sciName,
     ...sciName.split(/\s+/),
     ...commonNames,
     ...commonNames.flatMap(n => n.split(/\s+/)),
-  ].filter(w => w.length > 2));
+  ].filter(t => t.length > 2);
 
-  // Score each database entry
+  // Score each database entry using both exact and substring matching
   let best = null;
   let bestScore = -1;
 
   for (const entry of entries) {
     if (entry.id === 'unknown') continue;
     let score = 0;
-    for (const kw of entry.keywords) {
-      const kwLower = kw.toLowerCase();
-      if (identifiers.has(kwLower)) {
-        // Multi-word keywords score higher (more specific match)
-        score += kwLower.split(/\s+/).length;
+
+    for (const term of searchTerms) {
+      for (const kw of entry.keywords) {
+        const kwLower = kw.toLowerCase();
+        if (kwLower === term) {
+          // Exact match — heavier weight for multi-word keywords (more specific)
+          score += kwLower.split(/\s+/).length * 3;
+        } else if (kwLower.includes(term) || term.includes(kwLower)) {
+          // Substring match — lighter weight
+          score += 1;
+        }
       }
     }
+
     if (score > bestScore) { bestScore = score; best = entry; }
   }
 
-  // Build a friendly display name from what PlantNet told us
-  const commonName  = top.species?.commonNames?.[0] || '';
-  const sciDisplay  = top.species?.scientificNameWithoutAuthor || '';
+  // Build display name from what PlantNet returned
+  const commonName = top.species?.commonNames?.[0] || '';
+  const sciDisplay = top.species?.scientificNameWithoutAuthor || '';
   const displayName = commonName
     ? `${commonName} (${sciDisplay})`
     : (sciDisplay || 'Unknown Plant');
+
+  // Raw fields for the UI to show as a debug/info chip
+  const rawIdentification = {
+    genus:      top.species?.genus?.scientificNameWithoutAuthor  || '',
+    family:     top.species?.family?.scientificNameWithoutAuthor || '',
+    sciName:    sciDisplay,
+    commonName: commonName,
+  };
 
   if (best && bestScore > 0) {
     return {
       ...best,
       plantName: displayName,
       confidence,
-      description: `Identified as ${sciDisplay || displayName}. ${best.description}`,
+      rawIdentification,
     };
   }
 
-  // No database match – return generic advice with the PlantNet species name
   return {
     ...fallback,
     plantName: displayName || 'Unknown Plant',
     confidence,
-    description: `Identified as ${sciDisplay || 'an unrecognised species'}. ${fallback.description}`,
+    rawIdentification,
   };
 }

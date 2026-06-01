@@ -42,9 +42,17 @@ export default function ResultsScreen({ result, imagePreview, onReset }) {
               <TrendingUp size={14} aria-hidden="true" />
               {result.confidence}% match
             </span>
+            {result.rawIdentification?.family && (
+              <span className="inline-flex items-center bg-white/20 text-white rounded-full px-3 py-1 text-xs font-mono">
+                Family: {result.rawIdentification.family}
+              </span>
+            )}
           </div>
-          {result.description && (
-            <p className="text-sage-100 text-sm mt-2 leading-relaxed">{result.description}</p>
+          {result.rawIdentification?.sciName && result.rawIdentification.sciName !== result.plantName.split('(')[1]?.replace(')','').trim() && (
+            <p className="text-sage-200 text-xs mt-1 italic">
+              PlantNet identified: {result.rawIdentification.sciName}
+              {result.rawIdentification.genus ? ` · Genus: ${result.rawIdentification.genus}` : ''}
+            </p>
           )}
         </div>
       </div>
