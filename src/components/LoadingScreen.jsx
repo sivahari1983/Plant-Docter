@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Leaf } from 'lucide-react';
 
 const messages = [
-  'Sending image to Pl@ntNet...',
-  'Identifying your plant...',
-  'Matching species database...',
-  'Checking nutritional profiles...',
-  'Preparing recommendations...',
+  'Identifying plant species...',
+  'Analysing leaf colour and texture...',
+  'Diagnosing root causes...',
+  'Checking nutritional status...',
+  'Preparing treatment plan...',
 ];
 
 export default function LoadingScreen({ imagePreview }) {
@@ -74,7 +74,7 @@ export default function LoadingScreen({ imagePreview }) {
             {messages[msgIdx]}
           </p>
           <p className="font-sans text-sm text-slate-400 mt-1">
-            This usually takes 3–5 seconds
+            Usually takes 8–15 seconds
           </p>
         </div>
       </div>

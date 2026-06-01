@@ -1,6 +1,7 @@
 import { RotateCcw, Leaf, TrendingUp, FlaskConical, Sprout, BookmarkPlus, BookmarkCheck } from 'lucide-react';
 import { useState } from 'react';
 import NutrientCard from './NutrientCard';
+import HealthAnalysisSection from './HealthAnalysisSection';
 
 export default function ResultsScreen({ result, imagePreview, onReset }) {
   const [saved, setSaved] = useState(false);
@@ -58,21 +59,31 @@ export default function ResultsScreen({ result, imagePreview, onReset }) {
       </div>
 
       <div className="px-4 py-4 space-y-4">
-        {/* Visible symptoms */}
-        {result.deficiencySymptoms && result.deficiencySymptoms !== 'None visible' && (
-          <div className="bg-amber-50 border border-amber-400/30 rounded-2xl p-4">
-            <h2 className="font-semibold text-amber-700 mb-1 text-sm">Visible Symptoms</h2>
-            <p className="text-amber-800 text-sm">{result.deficiencySymptoms}</p>
+
+        {/* ── AI health & root-cause analysis (Gemini) ── */}
+        {result.healthAnalysis && (
+          <HealthAnalysisSection health={result.healthAnalysis} />
+        )}
+
+        {/* ── Divider when both sections present ── */}
+        {result.healthAnalysis && result.nutrients?.length > 0 && (
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 border-t border-cream-300" />
+            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wide flex items-center gap-1">
+              <Leaf size={12} /> Species Nutrition Profile
+            </span>
+            <div className="flex-1 border-t border-cream-300" />
           </div>
         )}
 
-        {/* Nutritional status */}
+        {/* ── Nutritional status (static species DB) ── */}
         {result.nutrients?.length > 0 && (
           <div className="bg-white rounded-2xl shadow-card p-4">
-            <h2 className="font-sans text-lg font-semibold text-forest-900 mb-3 flex items-center gap-2">
+            <h2 className="font-sans text-lg font-semibold text-forest-900 mb-1 flex items-center gap-2">
               <FlaskConical size={20} className="text-forest-500" aria-hidden="true" />
-              Nutritional Status
+              Nutritional Baseline
             </h2>
+            <p className="text-xs text-slate-400 mb-3">General nutrient profile for this species</p>
             <ul className="space-y-3" role="list">
               {result.nutrients.map((n, i) => (
                 <li key={i}>
@@ -83,12 +94,12 @@ export default function ResultsScreen({ result, imagePreview, onReset }) {
           </div>
         )}
 
-        {/* Fertilizer suggestions */}
+        {/* ── Fertilizer suggestions ── */}
         {result.fertilizerSuggestions?.length > 0 && (
           <div className="bg-white rounded-2xl shadow-card p-4">
             <h2 className="font-sans text-lg font-semibold text-forest-900 mb-3 flex items-center gap-2">
               <Sprout size={20} className="text-forest-500" aria-hidden="true" />
-              Fertilizer Recommendations
+              General Fertilizer Guide
             </h2>
             <ul className="space-y-2" role="list">
               {result.fertilizerSuggestions.map((s, i) => (
@@ -101,10 +112,10 @@ export default function ResultsScreen({ result, imagePreview, onReset }) {
           </div>
         )}
 
-        {/* General care */}
+        {/* ── General care ── */}
         {result.careAdvice && (
           <div className="bg-forest-50 rounded-2xl p-4">
-            <h2 className="font-sans text-sm font-semibold text-forest-900 mb-1">General Care</h2>
+            <h2 className="font-sans text-sm font-semibold text-forest-900 mb-1">Species Care Notes</h2>
             <p className="text-slate-600 text-sm leading-relaxed">{result.careAdvice}</p>
           </div>
         )}
