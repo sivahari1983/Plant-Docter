@@ -2,6 +2,7 @@ import { RotateCcw, Leaf, TrendingUp, FlaskConical, Sprout, BookmarkPlus, Bookma
 import { useState } from 'react';
 import NutrientCard from './NutrientCard';
 import HealthAnalysisSection from './HealthAnalysisSection';
+import PlantNetCard from './PlantNetCard';
 
 export default function ResultsScreen({ result, imagePreview, onReset }) {
   const [saved, setSaved] = useState(false);
@@ -49,16 +50,13 @@ export default function ResultsScreen({ result, imagePreview, onReset }) {
               </span>
             )}
           </div>
-          {result.rawIdentification?.sciName && result.rawIdentification.sciName !== result.plantName.split('(')[1]?.replace(')','').trim() && (
-            <p className="text-sage-200 text-xs mt-1 italic">
-              PlantNet identified: {result.rawIdentification.sciName}
-              {result.rawIdentification.genus ? ` · Genus: ${result.rawIdentification.genus}` : ''}
-            </p>
-          )}
         </div>
       </div>
 
       <div className="px-4 py-4 space-y-4">
+
+        {/* ── PlantNet botanical identification card ── */}
+        <PlantNetCard matches={result.plantNetMatches} />
 
         {/* ── AI health & root-cause analysis (Gemini) ── */}
         {result.healthAnalysis && (

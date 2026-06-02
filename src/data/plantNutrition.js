@@ -601,7 +601,6 @@ export function lookupPlant(plantNetResponse) {
     ? `${commonName} (${sciDisplay})`
     : (sciDisplay || 'Unknown Plant');
 
-  // Raw fields for the UI to show as a debug/info chip
   const rawIdentification = {
     genus:      top.species?.genus?.scientificNameWithoutAuthor  || '',
     family:     top.species?.family?.scientificNameWithoutAuthor || '',
@@ -609,19 +608,18 @@ export function lookupPlant(plantNetResponse) {
     commonName: commonName,
   };
 
+  const plantNetMatches = results.slice(0, 3).map((r, i) => ({
+    rank:       i + 1,
+    sciName:    r.species?.scientificNameWithoutAuthor || '',
+    commonName: r.species?.commonNames?.[0] || '',
+    confidence: Math.round((r.score || 0) * 100),
+    genus:      r.species?.genus?.scientificNameWithoutAuthor  || '',
+    family:     r.species?.family?.scientificNameWithoutAuthor || '',
+  }));
+
   if (best && bestScore > 0) {
-    return {
-      ...best,
-      plantName: displayName,
-      confidence,
-      rawIdentification,
-    };
+    return { ...best, plantName: displayName, confidence, rawIdentification, plantNetMatches };
   }
 
-  return {
-    ...fallback,
-    plantName: displayName || 'Unknown Plant',
-    confidence,
-    rawIdentification,
-  };
+  return { ...fallback, plantName: displayName || 'Unknown Plant', confidence, rawIdentification, plantNetMatches };
 }
