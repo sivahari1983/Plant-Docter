@@ -91,7 +91,8 @@ export function usePlantAnalysis() {
   const [error,   setError]   = useState(null);
 
   async function analyze(file, organ = 'leaf') {
-    const plantNetKey = import.meta.env.VITE_PLANTNET_API_KEY || localStorage.getItem('plantnet_api_key');
+    // localStorage (⚙️ settings gear) takes priority over the baked-in env var
+    const plantNetKey = localStorage.getItem('plantnet_api_key') || import.meta.env.VITE_PLANTNET_API_KEY;
     if (!plantNetKey) {
       setError('No API key found. Please add your Pl@ntNet API key in settings.');
       return;
