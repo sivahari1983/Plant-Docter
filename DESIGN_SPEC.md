@@ -1234,4 +1234,277 @@ Tapping it transitions the view to `'apikey'` with `isSettingsMode: true`, which
 
 ---
 
+---
+
+## Component 2.20: PlantNetCard
+
+### Purpose
+
+PlantNetCard is a self-contained "botanical ID card" that surfaces the full taxonomic data returned by the PlantNet API. It is inserted in ResultsScreen immediately after the hero header block (the `bg-forest-700` section) and before the Gemini health analysis section. It replaces the current raw inline display of `rawIdentification.sciName`, `rawIdentification.genus`, and `rawIdentification.family` in the hero header, which should be removed once this card is in place.
+
+---
+
+### Visual Connection to the Hero Header
+
+The hero header ends with a dark `bg-forest-700` band that has `pb-6` bottom padding. PlantNetCard sits in the `px-4 py-4 space-y-4` content column directly below — no overlap.
+
+The visual handoff is achieved by a **top accent bar**: the card has a `border-t-4 border-forest-500` top edge. This creates a thin sage-green line that reads as a deliberate "lid" connecting the card to the forest-700 header above, grounding the card without requiring overlap or negative margin. The card sits at the same horizontal inset (`mx-0` within the `px-4` column) as all other result cards, preserving the overall rhythm.
+
+The card uses `shadow-card` (`0 2px 16px 0 rgba(26,61,43,0.08)`) so it appears to sit at the same elevation level as the other result cards, not above them. There is no `mt-0` collapse — the standard `space-y-4` gap applies between the hero and the card.
+
+---
+
+### Card Shell
+
+| Property | Tailwind classes | Notes |
+|---|---|---|
+| Outer container | `bg-white rounded-2xl shadow-card border-t-4 border-forest-500 overflow-hidden` | The `border-t-4` accent is the visual bridge to the hero header |
+| Inner padding | `p-4 md:p-5` | Matches the card-internal padding standard from Section 1.5 |
+| Semantic element | `<section>` | Must carry `aria-labelledby="plantnet-card-heading"` |
+
+---
+
+### Section 1: Primary Identification Row
+
+This row is the first thing rendered inside the card padding. It communicates the single best PlantNet match at a glance.
+
+**Layout:** `flex flex-col gap-1` (stacked, not side-by-side — scientific names can be long)
+
+**Header row (icon + label):**
+
+- Container: `flex items-center gap-2 mb-3`
+- Icon: `Dna` from lucide-react, size 18, class `text-forest-500 flex-shrink-0`
+- Label: `id="plantnet-card-heading"`, text "Botanical Identification", class `font-sans text-base font-semibold text-forest-900`
+
+The `Dna` icon was chosen because it evokes precise scientific identification rather than the general-purpose `Leaf` icon already used in the app logo and hero header. A `Microscope` icon is acceptable as an alternative if `Dna` is not available in the installed lucide-react version.
+
+**Scientific name:**
+
+- Element: `<p>`
+- Classes: `font-sans text-lg font-semibold italic text-forest-900 leading-snug`
+- Content: `scientificNameWithoutAuthor` from the top PlantNet result (e.g. "Capsicum annuum")
+- Rationale for `text-lg font-semibold`: scientific name is the authoritative identifier — it should read as a headline, not a subtitle. Italic follows universal botanical convention.
+
+**Common name:**
+
+- Element: `<p>`
+- Classes: `font-sans text-sm text-slate-600`
+- Content: first element of `commonNames` array, with a fallback of an em-dash if the array is empty
+- If multiple common names exist, show the first only in this row; the rest are not displayed (not enough space for them to add value here)
+
+**Confidence badge:**
+
+- Reuse the existing `ConfidenceBadge` component (Component 2.11)
+- Placed on its own line below the common name: `mt-1`
+- The badge `aria-label` must follow the existing pattern: `"Match confidence: {score} percent"` where `{score}` is `Math.round(score * 100)`
+- Icon inside badge: `TrendingUp` (already specified in 2.11) — do not change to a different icon for consistency
+
+Full primary row assembled:
+
+```
+[Dna icon]  Botanical Identification        ← header row
+Capsicum annuum                             ← scientific name (italic, text-lg)
+Bell pepper                                 ← common name (text-sm text-slate-600)
+[TrendingUp] 87% match                     ← ConfidenceBadge (mt-1)
+```
+
+---
+
+### Section 2: Taxonomy Row
+
+Displayed below the primary identification row, separated by a thin divider.
+
+**Divider:** `<hr className="border-0 border-t border-cream-300 my-3" />`
+
+**Taxonomy row container:** `flex flex-wrap gap-2 items-center`
+
+**Label prefix** (optional, appears before the chips in muted text):
+- Classes: `font-sans text-xs text-slate-400 font-semibold uppercase tracking-wide mr-1`
+- Text: "Taxonomy"
+
+**Genus chip:**
+
+| Property | Value |
+|---|---|
+| Container | `inline-flex items-center gap-1.5 bg-forest-50 border border-forest-200 rounded-full px-3 py-1` |
+| Label text | `font-sans text-xs text-slate-400 font-medium` — "Genus" |
+| Separator | `text-cream-300` — "|" character, `mx-0.5` |
+| Value text | `font-sans text-xs font-semibold text-forest-900` — e.g. "Capsicum" |
+| ARIA | The chip `<span>` carries `aria-label="Genus: Capsicum"` |
+
+**Family chip:**
+
+| Property | Value |
+|---|---|
+| Container | `inline-flex items-center gap-1.5 bg-forest-50 border border-forest-200 rounded-full px-3 py-1` |
+| Label text | `font-sans text-xs text-slate-400 font-medium` — "Family" |
+| Separator | `text-cream-300` — "|" character, `mx-0.5` |
+| Value text | `font-sans text-xs font-semibold text-forest-900` — e.g. "Solanaceae" |
+| ARIA | The chip `<span>` carries `aria-label="Family: Solanaceae"` |
+
+Both chips use `bg-forest-50` (not `bg-forest-200`) to stay visually lighter than the status chips used in NutrientCard — they are informational, not status indicators. The `border border-forest-200` adds enough definition on the `bg-white` card background.
+
+If either `genus` or `family` is missing from the PlantNet response, that chip is simply not rendered. Do not show a chip with an empty value or a dash.
+
+**Assembled taxonomy row:**
+
+```
+Taxonomy   [Genus | Capsicum]   [Family | Solanaceae]
+```
+
+---
+
+### Section 3: Alternative Matches (Collapsible)
+
+PlantNet returns multiple ranked candidates. This section shows the top 3 results (indices 0–2 of the `results` array), where index 0 is already shown in the Primary row above. Showing index 0 again in this list is correct — it helps users see the score differential between the top match and the alternatives.
+
+**Divider before section:** `<hr className="border-0 border-t border-cream-300 my-3" />`
+
+**Toggle button:**
+
+- Element: `<button type="button">`
+- Classes: `w-full flex items-center justify-between py-1 focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2 rounded-lg`
+- Left side: `flex items-center gap-2`
+  - Icon: `ListTree` from lucide-react, size 16, class `text-forest-500`
+  - Text: `font-sans text-sm font-semibold text-forest-900` — "Top Matches"
+  - Count badge: `inline-flex items-center justify-center w-5 h-5 rounded-full bg-forest-200 font-mono text-xs text-forest-900` — shows "3"
+- Right side: chevron icon that rotates on open/close
+  - Closed: `ChevronDown` from lucide-react, size 16, class `text-slate-400 transition-transform duration-200`
+  - Open: same icon with class `text-slate-400 transition-transform duration-200 rotate-180`
+- ARIA on the button: `aria-expanded={isOpen ? "true" : "false"}` and `aria-controls="plantnet-alternatives"`
+
+**Default collapsed state:**
+
+- On mobile (default): **collapsed** — `isOpen` starts as `false`
+- On `md:` and above (desktop): **expanded** — `isOpen` starts as `true`. Implement this with a `useEffect` that reads `window.innerWidth` on mount, or use a CSS-only approach where the list is always visible on `md:` by using `hidden md:block` on the list and toggling only on mobile. The CSS-only approach is preferred as it avoids a layout flash.
+
+**CSS-only responsive disclosure:**
+The alternatives list container uses:
+```
+id="plantnet-alternatives"
+className={`mt-3 space-y-2 ${isOpen ? 'block' : 'hidden'} md:block`}
+```
+This means on `md:` the list is always rendered regardless of `isOpen`. The toggle button itself is hidden on `md:` with `md:hidden` to avoid a non-functional affordance on desktop.
+
+**Each alternative match item:**
+
+Container: `flex items-center gap-3 py-2 border-b border-cream-300 last:border-b-0`
+
+Left: rank number badge
+- Classes: `flex-shrink-0 w-6 h-6 rounded-full bg-forest-200 flex items-center justify-center font-mono text-xs font-bold text-forest-900`
+- Content: rank number as `#1`, `#2`, `#3`
+- The rank-1 item (top match) gets `bg-forest-500 text-white` instead of the default forest-200/forest-900 to visually distinguish it as the confirmed identification
+
+Center: plant name block — `flex-1 min-w-0`
+- Scientific name: `font-sans text-sm italic text-forest-900 truncate` — `scientificNameWithoutAuthor`
+- Common name: `font-sans text-xs text-slate-400 truncate mt-0.5` — first element of `commonNames`, or omitted if empty
+
+Right: confidence indicator
+- Container: `flex-shrink-0 flex flex-col items-end gap-1`
+- Percentage text: `font-mono text-xs text-forest-700 font-semibold` — e.g. "87%"
+- Progress bar:
+  - Track: `w-16 h-1.5 rounded-full bg-forest-100`
+  - Fill: `h-full rounded-full bg-forest-500 transition-all duration-300`
+  - Fill width: inline style `width: ${Math.round(score * 100)}%`
+  - ARIA on the progress bar container: `role="meter"`, `aria-valuenow={Math.round(score * 100)}`, `aria-valuemin="0"`, `aria-valuemax="100"`, `aria-label="{scientificName} match confidence: {score} percent"`
+
+Full alternative item assembled:
+
+```
+[#1]  Capsicum annuum          87%  ████████░░░░
+      Bell pepper
+
+[#2]  Capsicum frutescens       9%  █░░░░░░░░░░░
+      Chili pepper
+
+[#3]  Solanum lycopersicum      4%  ░░░░░░░░░░░░
+      Tomato
+```
+
+---
+
+### Props Interface
+
+```
+PlantNetCard Props:
+  plantNetResults: Array<{
+    scientificNameWithoutAuthor: string,
+    commonNames: string[],
+    genus: { scientificNameWithoutAuthor: string },
+    family: { scientificNameWithoutAuthor: string },
+    score: number,          // 0–1
+  }>
+```
+
+The component always reads its primary identification from `plantNetResults[0]` and shows indices 0–2 in the alternatives list. If `plantNetResults` is empty or undefined, the component renders nothing (`return null`).
+
+---
+
+### Position in ResultsScreen
+
+PlantNetCard is inserted as the **first card** in the `px-4 py-4 space-y-4` content column, before `HealthAnalysisSection`. The `space-y-4` gap on the parent column provides the standard 16px separation from the hero header and from the next card.
+
+The existing inline display of `rawIdentification.sciName`, `rawIdentification.genus`, and `rawIdentification.family` in the hero header's `<p className="text-sage-200 text-xs mt-1 italic">` element should be removed when PlantNetCard is implemented, as PlantNetCard supersedes it.
+
+Updated ResultsScreen content column order:
+
+```
+1. PlantNetCard          ← new, first
+2. HealthAnalysisSection (Gemini)
+3. [divider — "Species Nutrition Profile"]
+4. Nutritional Baseline card
+5. Fertilizer Guide card
+6. Species Care Notes card
+7. Action buttons row
+```
+
+---
+
+### ARIA Summary
+
+| Element | Attribute | Value |
+|---|---|---|
+| Card `<section>` | `aria-labelledby` | `"plantnet-card-heading"` |
+| Card heading | `id` | `"plantnet-card-heading"` |
+| ConfidenceBadge (primary) | `aria-label` | `"Match confidence: {score} percent"` |
+| Genus chip | `aria-label` | `"Genus: {genus}"` |
+| Family chip | `aria-label` | `"Family: {family}"` |
+| Alternatives toggle button | `aria-expanded` | `"true"` / `"false"` |
+| Alternatives toggle button | `aria-controls` | `"plantnet-alternatives"` |
+| Alternatives list | `id` | `"plantnet-alternatives"` |
+| Each confidence bar | `role` | `"meter"` |
+| Each confidence bar | `aria-valuenow` | rounded integer 0–100 |
+| Each confidence bar | `aria-valuemin` | `"0"` |
+| Each confidence bar | `aria-valuemax` | `"100"` |
+| Each confidence bar | `aria-label` | `"{scientificName} match confidence: {score} percent"` |
+| Rank badge (decorative) | `aria-hidden` | `"true"` |
+| Dna icon | `aria-hidden` | `"true"` |
+| ListTree icon | `aria-hidden` | `"true"` |
+| Chevron icon | `aria-hidden` | `"true"` |
+
+---
+
+### Icons Used (lucide-react)
+
+| Icon name | Used for | Size | Color class |
+|---|---|---|---|
+| `Dna` | Card header — primary identification | 18 | `text-forest-500` |
+| `TrendingUp` | Inside ConfidenceBadge (inherited from 2.11) | 14 | `text-forest-700` |
+| `ListTree` | Alternatives toggle button label | 16 | `text-forest-500` |
+| `ChevronDown` | Alternatives toggle collapse indicator | 16 | `text-slate-400` |
+
+Fallback: if `Dna` is unavailable in the installed lucide-react version, use `Microscope` (already imported in NutrientCard per Section 2.9). Do not use `Leaf` — it is already used for the app logo and would reduce icon differentiation.
+
+---
+
+### File Location
+
+```
+src/components/PlantNetCard.jsx
+```
+
+No new utility files are required. The component is self-contained and does not require a custom hook — it is purely display logic driven by the `plantNetResults` prop passed down from ResultsScreen.
+
+---
+
 *End of DESIGN_SPEC.md*
