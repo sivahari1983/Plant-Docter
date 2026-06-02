@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { resizeImage, fileToBase64 } from '../utils/imageUtils';
 import { lookupPlant } from '../data/plantNutrition';
 
-const PLANTNET_URL = 'https://my-api.plantnet.org/v2/identify/all?include-related-images=false&lang=en';
-const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const PLANTNET_URL    = 'https://my-api.plantnet.org/v2/identify/all?include-related-images=false&lang=en';
+const OPENROUTER_URL  = 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_MODEL = 'google/gemini-flash-1.5-8b:free';
 
 function buildHealthPrompt(plantName) {
   return `You are an expert botanist, plant pathologist, and horticulturist.
@@ -47,31 +48,38 @@ If the plant appears healthy, still list 2–3 optimal maintenance supplements a
 Provide at least 3 root causes and 3 supplements regardless of condition.`;
 }
 
-async function callGemini(imageFile, plantName) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key');
+async function callOpenRouter(imageFile, plantName) {
+  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || localStorage.getItem('openrouter_api_key');
   if (!apiKey) return null;
 
   const base64   = await fileToBase64(imageFile);
   const mimeType = imageFile.type || 'image/jpeg';
 
-  const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization':  `Bearer ${apiKey}`,
+      'HTTP-Referer':   'https://sivahari1983.github.io/Plant-Docter/',
+      'X-Title':        'Plant Doctor',
+      'Content-Type':   'application/json',
+    },
     body: JSON.stringify({
-      contents: [{
-        parts: [
-          { inline_data: { mime_type: mimeType, data: base64 } },
-          { text: buildHealthPrompt(plantName) },
+      model: OPENROUTER_MODEL,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+          { type: 'text', text: buildHealthPrompt(plantName) },
         ],
       }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 1500 },
+      max_tokens: 1500,
     }),
   });
 
   if (!res.ok) return null;
 
   const data  = await res.json();
-  const text  = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+  const text  = data.choices?.[0]?.message?.content?.trim() || '';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) return null;
   return JSON.parse(match[0]);
@@ -121,13 +129,13 @@ export function usePlantAnalysis() {
       const pnData      = await pnRes.json();
       const speciesData = lookupPlant(pnData);
 
-      // ── Step 2: Gemini visual health & root-cause analysis ────────────────
+      // ── Step 2: OpenRouter visual health & root-cause analysis ──────────────
       let healthAnalysis = null;
       try {
-        healthAnalysis = await callGemini(resized, speciesData.plantName);
-      } catch (geminiErr) {
-        // Non-fatal: species info still shows even if Gemini fails
-        console.warn('Gemini health analysis unavailable:', geminiErr.message);
+        healthAnalysis = await callOpenRouter(resized, speciesData.plantName);
+      } catch (openRouterErr) {
+        // Non-fatal: species info still shows even if OpenRouter fails
+        console.warn('OpenRouter health analysis unavailable:', openRouterErr.message);
       }
 
       setResult({ ...speciesData, healthAnalysis });
