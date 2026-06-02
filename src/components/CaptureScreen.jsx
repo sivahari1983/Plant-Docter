@@ -1,16 +1,32 @@
-import { useRef } from 'react';
-import { Camera, ImagePlus, Leaf, Settings } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Camera, ImagePlus, Leaf, Settings, X } from 'lucide-react';
 import { validateImageFile } from '../utils/imageUtils';
+
+const ORGANS = [
+  { value: 'leaf',   label: 'Leaf',   emoji: '🍃' },
+  { value: 'flower', label: 'Flower', emoji: '🌸' },
+  { value: 'fruit',  label: 'Fruit',  emoji: '🍎' },
+  { value: 'auto',   label: 'Auto',   emoji: '🌿' },
+];
 
 export default function CaptureScreen({ onImageCapture, onOpenSettings }) {
   const cameraRef  = useRef();
   const galleryRef = useRef();
+  const [organ, setOrgan]       = useState('leaf');
+  const [tipDismissed, setTip]  = useState(
+    () => localStorage.getItem('plantdoctor_tip_dismissed') === '1'
+  );
+
+  function dismissTip() {
+    localStorage.setItem('plantdoctor_tip_dismissed', '1');
+    setTip(true);
+  }
 
   function handleFile(file) {
     if (!file) return;
     const err = validateImageFile(file);
     if (err) { alert(err); return; }
-    onImageCapture(file);
+    onImageCapture(file, organ);
   }
 
   return (
@@ -41,16 +57,52 @@ export default function CaptureScreen({ onImageCapture, onOpenSettings }) {
       </div>
 
       {/* Hero illustration */}
-      <div className="w-full h-44 flex items-center justify-center my-4 px-4">
+      <div className="w-full h-36 flex items-center justify-center my-3 px-4">
         <div className="w-full h-full bg-forest-50 rounded-3xl flex items-center justify-center">
-          <Leaf size={96} className="text-forest-200" aria-hidden="true" />
+          <Leaf size={80} className="text-forest-200" aria-hidden="true" />
         </div>
       </div>
 
-      {/* Prompt text */}
-      <p className="text-sm text-slate-400 text-center px-6 mb-6">
-        Take or upload a photo of your plant to get started
-      </p>
+      {/* Photo tip banner */}
+      {!tipDismissed && (
+        <div className="mx-4 mb-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
+          <span className="text-xl flex-shrink-0" aria-hidden="true">📸</span>
+          <p className="text-sm text-amber-800 flex-1 leading-snug">
+            <strong>For best results:</strong> fill the frame with a single leaf or stem on a plain background.
+          </p>
+          <button
+            onClick={dismissTip}
+            className="flex-shrink-0 text-amber-400 hover:text-amber-700 mt-0.5"
+            aria-label="Dismiss tip"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Organ selector */}
+      <div className="mx-4 mb-4">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+          What part are you photographing?
+        </p>
+        <div className="flex gap-2" role="group" aria-label="Plant organ selector">
+          {ORGANS.map(o => (
+            <button
+              key={o.value}
+              onClick={() => setOrgan(o.value)}
+              aria-pressed={organ === o.value}
+              className={`flex-1 flex flex-col items-center py-2 px-1 rounded-xl border text-xs font-semibold transition-colors duration-150 min-h-[56px] ${
+                organ === o.value
+                  ? 'bg-forest-500 border-forest-500 text-white'
+                  : 'bg-white border-forest-200 text-forest-700 hover:bg-forest-50'
+              }`}
+            >
+              <span className="text-lg leading-none mb-1" aria-hidden="true">{o.emoji}</span>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Hidden file inputs */}
       <input
@@ -59,7 +111,7 @@ export default function CaptureScreen({ onImageCapture, onOpenSettings }) {
         accept="image/*"
         capture="environment"
         className="sr-only"
-        aria-label="Select plant image file"
+        aria-label="Take plant photo"
         onChange={(e) => handleFile(e.target.files[0])}
       />
       <input
@@ -67,12 +119,12 @@ export default function CaptureScreen({ onImageCapture, onOpenSettings }) {
         type="file"
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
-        aria-label="Select plant image file"
+        aria-label="Upload plant photo"
         onChange={(e) => handleFile(e.target.files[0])}
       />
 
       {/* Camera FAB */}
-      <div className="flex flex-col items-center my-4">
+      <div className="flex flex-col items-center my-3">
         <button
           onClick={() => cameraRef.current.click()}
           aria-label="Take a photo of your plant"
@@ -102,7 +154,6 @@ export default function CaptureScreen({ onImageCapture, onOpenSettings }) {
         </button>
       </div>
 
-      {/* Caption */}
       <p className="text-xs text-slate-400 text-center mt-3 mb-8 pb-safe">
         Supports JPG, PNG, WebP up to 10MB
       </p>

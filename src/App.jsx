@@ -40,10 +40,10 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initial);
   const { analyze, loading, result, error } = usePlantAnalysis();
 
-  const handleCapture = useCallback(async (file) => {
+  const handleCapture = useCallback(async (file, organ = 'leaf') => {
     const preview = URL.createObjectURL(file);
     dispatch({ type: 'CAPTURE', file, preview });
-    await analyze(file);
+    await analyze(file, organ);
   }, [analyze]);
 
   useEffect(() => {

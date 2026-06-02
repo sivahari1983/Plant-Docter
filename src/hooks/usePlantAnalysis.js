@@ -82,7 +82,7 @@ export function usePlantAnalysis() {
   const [result,  setResult]  = useState(null);
   const [error,   setError]   = useState(null);
 
-  async function analyze(file) {
+  async function analyze(file, organ = 'leaf') {
     const plantNetKey = import.meta.env.VITE_PLANTNET_API_KEY || localStorage.getItem('plantnet_api_key');
     if (!plantNetKey) {
       setError('No API key found. Please add your Pl@ntNet API key in settings.');
@@ -102,7 +102,7 @@ export function usePlantAnalysis() {
       // ── Step 1: PlantNet species identification ───────────────────────────
       const formBody = new FormData();
       formBody.append('images', resized, resized.name || 'plant.jpg');
-      formBody.append('organs', 'auto');
+      formBody.append('organs', organ);
 
       const pnRes = await fetch(`${PLANTNET_URL}&api-key=${encodeURIComponent(plantNetKey)}`, {
         method: 'POST',
